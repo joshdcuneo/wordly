@@ -4,7 +4,7 @@
 
 module Main (main) where
 
-import Console (askGuess, askMaxGuesses, askWordLength, showClue, showInstructions)
+import Console (askGuess, askMaxGuesses, askWordLength, showClue, showInstructions, showResult)
 import Control.Monad.IO.Class ()
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (ExceptT (..))
@@ -16,19 +16,12 @@ import Data.List ()
 import System.IO (IOMode (ReadMode), hGetContents, openFile)
 import System.Random (Random (random), newStdGen, randomR)
 import Text.Read (readMaybe)
+import Game (Game(..), GameResult (..), isLoss, isWin)
+import Numeric (showInt)
 
 type WordListReaderT m a = ReaderT [String] m a
 
-data Game = Game
-  { word :: String,
-    maxGuesses :: Int,
-    wordLength :: Int,
-    guesses :: [String]
-  }
-
 type GameStateT m = StateT Game m
-
-data GameResult = Win Game | Loss Game
 
 type App a = WordListReaderT (GameStateT IO) a
 
@@ -45,11 +38,8 @@ main = do
   maxGuesses <- askMaxGuesses
   wordList <- loadWords wordLength
   word <- randomWord wordList
-
   gameResult <- evalStateT (runReaderT playGame wordList) Game {word, maxGuesses, wordLength, guesses = []}
-  case gameResult of
-    Win game -> putStrLn "\nYou win!"
-    Loss game -> putStrLn $ "\nYou lose! The word was '" ++ game.word ++ "'."
+  showResult gameResult
 
 playGame :: App GameResult
 playGame = do
@@ -65,17 +55,11 @@ playRound = do
       if isLoss game
         then return $ Just $ Loss game
         else do
+          performIO showInstructions
           performIO $ showClue game.word game.guesses
           guess <- performIO $ askGuess game.wordLength
           performState $ put game {guesses = guess : game.guesses}
           playRound
-
-isLoss :: Game -> Bool
-isLoss game@Game {guesses, maxGuesses} = length guesses >= maxGuesses
-
-isWin :: Game -> Bool
-isWin Game {guesses = []} = False
-isWin Game {word, guesses = (lastGuess : _)} = word == lastGuess
 
 loadWords :: Int -> IO [String]
 loadWords wordLength = do
