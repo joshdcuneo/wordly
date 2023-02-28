@@ -21,18 +21,25 @@ maintainer:         josh@critical.codes
 -- category:
 extra-source-files: CHANGELOG.md
 
+common all
+  build-depends:
+      base ^>=4.16.4.0
+  default-language: Haskell2010
+
+library
+    exposed-modules:
+        Console
+    hs-source-dirs:
+        src               
+    build-depends:
+        base ^>=4.16.4.0
+
 executable wordly
     main-is:          Main.hs
-
-    -- Modules included in this executable, other than Main.
-    -- other-modules:
-
-    -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
-    build-depends:    
-          base ^>=4.16.4.0
+    build-depends:
+        base ^>=4.16.4.0
         , mtl
         , transformers
         , random
+        , wordly
     hs-source-dirs:   app
-    default-language: Haskell2010

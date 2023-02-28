@@ -15,6 +15,7 @@ import Data.List ()
 import System.IO (IOMode (ReadMode), hGetContents, openFile)
 import System.Random (Random (random), newStdGen, randomR)
 import Text.Read (readMaybe)
+import Console (showInstructions, askMaxGuesses, askWordLength, askGuess, showClue)
 
 type WordListReaderT m a = ReaderT [String] m a
 
@@ -65,8 +66,8 @@ playRound = do
       if isLoss game
         then return $ Just $ Loss game
         else do
-          showClue
-          guess <- askGuess
+          performIO $ showClue game.word game.guesses
+          guess <- performIO $ askGuess game.wordLength
           performState $ put game {guesses = guess : game.guesses}
           playRound
 
@@ -78,84 +79,11 @@ isWin Game {guesses = []} = False
 isWin Game {word, guesses = (lastGuess : _)} = word == lastGuess
 
 
-askGuess :: App String
-askGuess = do
-  game <- performState get
-  performIO $ putStrLn $ "\nGuess a " ++ show (game.wordLength) ++ " letter word: "
-  guess <- performIO getLine
-  if length guess /= game.wordLength
-    then do
-      askGuess
-    else return guess
-
-showClue :: App ()
-showClue = do
-  game <- performState get
-  performIO $ putStrLn ""
-  mapM_ showClueForGuess $ reverse (game.guesses)
-
-showClueForGuess :: String -> App ()
-showClueForGuess guess = do
-  game <- performState get
-  performIO $ do
-    putStrLn guess
-    putStrLn $ clueForGuess guess game.word
-
-clueForGuess :: String -> String -> String
-clueForGuess guess word = zipWith (curry (clueForChar word)) [0 ..] guess
-
-clueForChar :: String  -> (Int, Char) -> Char
-clueForChar word (i, c)
-  | nthCharIs i c word = '*'
-  | c `elem` word = '?'
-  | otherwise = '-'
-
-askWordLength :: IO Int
-askWordLength = do
-  putStrLn "\nHow long do you want the word to be?"
-  askInt
-
-askMaxGuesses :: IO Int
-askMaxGuesses = do
-  putStrLn "\nHow many guesses do you want?"
-  askInt
-
-askInt :: IO Int
-askInt = do
-  input <- getLine
-  case readMaybe input of
-    Just n -> return n
-    Nothing -> do
-      putStrLn "\nPlease enter a number!"
-      askMaxGuesses
-
 loadWords :: Int -> IO [String]
 loadWords wordLength = do
   handle <- openFile "words.txt" ReadMode
   contents <- hGetContents handle
   return $ filter ((== wordLength) . length) (words contents)
-
-showInstructions :: IO ()
-showInstructions = do
-  putStrLn ""
-  putStrLn "Welcome to Wordly!"
-  putStrLn "------------------"
-  putStrLn "You have to guess a word."
-  putStrLn "You can guess a word by typing it in."
-  putStrLn "Each turn your previous guesses are printed."
-  putStrLn "Markers are used to indicate if the letter correctly guessed."
-  putStrLn "A '*' indicates a correct letter in the correct position."
-  putStrLn "A '?' indicates a correct letter in the wrong position."
-  putStrLn "A '-' indicates an incorrect letter."
-  putStrLn "You win if you guess the word correctly."
-  putStrLn "You lose if you run out of guesses."
-  putStrLn "Good luck!"
-
-nthChar :: Int -> String -> Maybe Char
-nthChar n s = if n < length s then Just $ s !! n else Nothing
-
-nthCharIs :: Int -> Char -> String -> Bool
-nthCharIs n c s = nthChar n s == Just c
 
 randomWord :: [String] -> IO String
 randomWord words = do
