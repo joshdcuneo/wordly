@@ -4,6 +4,7 @@
 
 module Main (main) where
 
+import Console (askGuess, askMaxGuesses, askWordLength, showClue, showInstructions)
 import Control.Monad.IO.Class ()
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (ExceptT (..))
@@ -15,7 +16,6 @@ import Data.List ()
 import System.IO (IOMode (ReadMode), hGetContents, openFile)
 import System.Random (Random (random), newStdGen, randomR)
 import Text.Read (readMaybe)
-import Console (showInstructions, askMaxGuesses, askWordLength, askGuess, showClue)
 
 type WordListReaderT m a = ReaderT [String] m a
 
@@ -45,12 +45,11 @@ main = do
   maxGuesses <- askMaxGuesses
   wordList <- loadWords wordLength
   word <- randomWord wordList
- 
-  gameResult <- evalStateT (runReaderT playGame wordList) Game {word, maxGuesses,wordLength, guesses = []}
+
+  gameResult <- evalStateT (runReaderT playGame wordList) Game {word, maxGuesses, wordLength, guesses = []}
   case gameResult of
     Win game -> putStrLn "\nYou win!"
     Loss game -> putStrLn $ "\nYou lose! The word was '" ++ game.word ++ "'."
-
 
 playGame :: App GameResult
 playGame = do
@@ -77,7 +76,6 @@ isLoss game@Game {guesses, maxGuesses} = length guesses >= maxGuesses
 isWin :: Game -> Bool
 isWin Game {guesses = []} = False
 isWin Game {word, guesses = (lastGuess : _)} = word == lastGuess
-
 
 loadWords :: Int -> IO [String]
 loadWords wordLength = do

@@ -20,8 +20,8 @@ showInstructions = do
 
 showClue :: String -> [String] -> IO ()
 showClue word guesses = do
-    putStrLn ""
-    mapM_ (showClueForGuess word) $ reverse (guesses)
+  putStrLn ""
+  mapM_ (showClueForGuess word) $ reverse (guesses)
 
 askGuess :: Int -> IO String
 askGuess wordLength = do
